@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SI Animații Web</title>
+  <style>
+    html,body{
+      height:100%; margin:0;
+      font-family:"Segoe UI", Arial, sans-serif;
+      background: radial-gradient(circle at center, aliceblue 0%, lavender 100%);
+      overflow:hidden;
+    }
+
+    .wrap{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      flex-direction:column;
+      padding:32px;
+    }
+
+    h1{
+      margin:0 0 10px 0;
+      font-family: "Brush Script MT", cursive;
+      font-size:42px;
+      color:#4b7ecf;
+      text-shadow:0 0 8px rgba(75,126,207,0.5);
+    }
+
+    .card{
+      background:rgba(173,216,230,0.4);
+      border-radius:18px;
+      padding:18px;
+      display:flex;
+      gap:18px;
+      align-items:center;
+      flex-direction:column;
+      width:820px;
+      max-width:95%;
+      box-shadow:0 0 20px rgba(0,0,0,0.1);
+      backdrop-filter: blur(5px);
+    }
+
+    canvas{
+      background:seashell;  
+      border-radius:12px;
+      width:760px;
+      height:420px;
+      max-width:100%;
+      display:block;
+    }
+
+    .hud{
+      width:100%;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin-top:8px;
+    }
+
+    .score{
+      font-weight:700;
+      font-size:18px;
+      background:seashell;
+      padding:8px 12px;
+      border-radius:12px;
+      color:dimgray;
+    }
+
+    .controls{
+      font-size:14px;
+      color:black;
+    }
+
+    .big-msg {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      background: rgba(255,255,255,0.85);
+      border-radius: 20px;
+      padding: 40px 60px;
+      text-align: center;
+      font-size: 60px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 0 0 15px rgba(0,0,0,0.4);
+      box-shadow: 0 0 40px rgba(0,0,0,0.3);
+      opacity: 0;
+      pointer-events: none;
+      animation: popUp 1s ease-out forwards;
+      z-index: 999;
+    }
+
+    .big-msg.win {
+      background: linear-gradient(135deg, #4ee36b, #22b4c9);
+    }
+    .big-msg.lose {
+      background: linear-gradient(135deg, #e34e4e, #c9227c);
+    }
+
+    @keyframes popUp {
+      0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+      60% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+
+    .confetti {
+      position: fixed;
+      width: 8px; height: 8px;
+      background: hsl(var(--hue), 80%, 60%);
+      top: -10px;
+      left: var(--x);
+      opacity: 0.8;
+      border-radius: 50%;
+      animation: fall 3s linear forwards;
+      z-index: 1000;
+    }
+
+    @keyframes fall {
+      0% { transform: translateY(0) rotate(0deg); }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    .flower {
+    position: fixed;
+    width: 22px;
+    height: 22px;
+    top: -30px;
+    left: var(--x);
+    opacity: 0.9;
+    transform: rotate(0deg);
+    animation: flowerFall 4s linear forwards;
+    z-index: 1000;
+  }
+
+  @keyframes flowerFall {
+    0% { transform: translateY(0) rotate(0deg); }
+    100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+  }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Pong Game</h1>
+    <div class="card">
+      <canvas id="game" width="760" height="420"></canvas>
+
+      <div class="hud">
+        <div class="score">
+          Jucător: <span id="playerScore">0</span>
+          &nbsp;—&nbsp;
+          Robot: <span id="robotScore">0</span>
+        </div>
+        <div class="controls">
+          ↑ / ↓ pentru paletă &nbsp;&nbsp;|&nbsp;&nbsp; Space pentru restart
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    const player = {x:20, y:H/2-45, w:12, h:90, dy:0};
+    const robot = {x:W-32, y:H/2-45, w:12, h:90, speed:2.5};
+    const ball = {x:W/2, y:H/2, vx:3, vy:1.5, r:9};
+
+    let playerScore=0, robotScore=0, running=true;
+    const scoreP=document.getElementById('playerScore');
+    const scoreR=document.getElementById('robotScore');
+
+    function drawPaddle(p){
+      ctx.fillStyle="#d0afe3";
+      ctx.fillRect(p.x,p.y,p.w,p.h);
+    }
+    function drawBall() {
+      const petals = 6;
+      const petalRadius = ball.r * 1.5;
+
+      for (let i = 0; i < petals; i++) {
+        const angle = (Math.PI * 2 * i) / petals;
+
+        ctx.beginPath();
+        ctx.fillStyle = "#ff77c4";
+        ctx.arc(
+          ball.x + Math.cos(angle) * petalRadius,
+          ball.y + Math.sin(angle) * petalRadius,
+          ball.r * 0.9,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
+
+      ctx.beginPath();
+      ctx.fillStyle = "#ffd966"; 
+      ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function moveBall(){ ball.x+=ball.vx; ball.y+=ball.vy; }
+    function detectCollision(){
+      if(ball.y-ball.r<=0||ball.y+ball.r>=H) ball.vy*=-1;
+
+      if(ball.x-ball.r<=player.x+player.w && ball.y>=player.y && ball.y<=player.y+player.h)
+        ball.vx=Math.abs(ball.vx)*1.1;
+      if(ball.x+ball.r>=robot.x && ball.y>=robot.y && ball.y<=robot.y+robot.h)
+        ball.vx=-Math.abs(ball.vx)*1.1;
+
+      if(ball.x-ball.r<=0){ robotScore++; updateScore(); endGame(false); }
+      if(ball.x+ball.r>=W){ playerScore++; updateScore(); endGame(true); }
+    }
+
+    function updateScore(){ scoreP.textContent=playerScore; scoreR.textContent=robotScore; }
+
+    function showBigMessage(win){
+      const msg=document.createElement('div');
+      msg.className='big-msg '+(win?'win':'lose');
+      msg.textContent= win ? '🎉 AI CÂȘTIGAT! 🎉' : '💀 AI PIERDUT! 💀';
+      document.body.appendChild(msg);
+
+      if (win) {
+      for (let i = 0; i < 40; i++) {
+        const f = document.createElement('div');
+        f.className = 'flower';
+
+        f.style.setProperty('--x', Math.random() * 100 + 'vw');
+
+        f.innerHTML = "🌸";
+
+        f.style.fontSize = (20 + Math.random() * 10) + "px";
+
+        document.body.appendChild(f);
+        setTimeout(() => f.remove(), 4000);
+      }
+    }
+
+
+      setTimeout(()=>msg.remove(),2500);
+    }
+
+    function endGame(win){
+      running=false;
+      showBigMessage(win);
+    }
+
+    function resetRound(){
+      ball.x=W/2; ball.y=H/2;
+      ball.vx=3*(Math.random()<0.5?1:-1);
+      ball.vy=1.5*(Math.random()<0.5?1:-1);
+      player.y=H/2-player.h/2;
+      robot.y=H/2-robot.h/2;
+      running=true;
+      requestAnimationFrame(step);
+    }
+
+    function updateRobot(){
+      if(ball.x>W/2){
+        const target=ball.y-robot.h/2;
+        robot.y+=Math.sign(target-robot.y)*robot.speed;
+      }
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      drawPaddle(player);
+      drawPaddle(robot);
+      drawBall();
+    }
+
+    function step(){
+      if(!running) return;
+      player.y+=player.dy;
+      if(player.y<0) player.y=0;
+      if(player.y+player.h>H) player.y=H-player.h;
+      moveBall();
+      detectCollision();
+      updateRobot();
+      draw();
+      requestAnimationFrame(step);
+    }
+
+    const keys={};
+    window.addEventListener('keydown', e=>{
+      if(["ArrowUp","ArrowDown"," "].includes(e.key)) e.preventDefault();
+      if(e.key==="ArrowUp"){player.dy=-6;keys.up=true;}
+      if(e.key==="ArrowDown"){player.dy=6;keys.down=true;}
+      if(e.code==="Space" && !running) resetRound();
+    });
+    window.addEventListener('keyup', e=>{
+      if(e.key==="ArrowUp"){keys.up=false;player.dy=keys.down?6:0;}
+      if(e.key==="ArrowDown"){keys.down=false;player.dy=keys.up?-6:0;}
+    });
+
+    draw();
+    requestAnimationFrame(step);
+  </script>
+</body>
+</html>
