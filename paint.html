@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Tabla de desen</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                margin: 20px;
+            }
+            form {
+                margin-bottom: 20px;
+                display: grid;
+                gap: 10px;
+                grid-template-columns: repeat(2, auto);
+                align-items: center;
+            }
+            canvas {
+                border: 1px solid #000;
+                cursor: crosshair;
+            }
+            .hidden {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>Tabla de desen</h2>
+        <form id="drawForm">
+            <label for="shape">Figura:</label>
+            <select id="shape" name="shape">
+                <option value="rect">Dreptunghi</option>
+                <option value="circle">Cerc</option>
+                <option value="line">Linie</option>
+            </select>
+
+            <br><br>
+
+            <div id="rectFields">
+                <label>Latime:</label><input type="number" id="rectWidth" min="1" value="100">
+                <label>Inaltime:</label><input type="number" id="rectHeight" min="1" value="60">
+            </div>
+
+            <div id="circleFields" class="hidden">
+                <label>Raza:</label><input type="number" id="circleRadius" min="1" value="50">
+            </div>
+
+            <div id="lineFields" class="hidden">
+                <label>X2:</label><input type="number" id="lineX2" min="0" value="150">
+                <label>Y2:</label><input type="number" id="lineY2" min="0" value="150">
+            </div>
+
+            <label>X:</label><input type="number" id="posX" min="0" value="50">
+            <label>Y:</label><input type="number" id="posY" min="0" value="50">
+
+            <label for="color">Culoare:</label>
+            <input type="color" id="color" value="#ff0000">
+
+            <button type="button" id="drawBtn">Deseneaza</button>
+            <button type="button" id="clearBtn">Sterge</button>
+        </form>
+
+        <canvas id="myCanvas" width="700" height="500"></canvas>
+
+        <script>
+            const canvas = document.getElementById("myCanvas");
+            const ctx = canvas.getContext("2d");
+
+            const shapeSelect = document.getElementById("shape");
+            const rectFields = document.getElementById("rectFields");
+            const circleFields = document.getElementById("circleFields");
+            const lineFields = document.getElementById("lineFields");
+
+            shapeSelect.addEventListener("change", () => {
+                rectFields.classList.add("hidden");
+                circleFields.classList.add("hidden");
+                lineFields.classList.add("hidden");
+
+                if (shapeSelect.value === "rect") rectFields.classList.remove("hidden");
+                if (shapeSelect.value === "circle") circleFields.classList.remove("hidden");
+                if (shapeSelect.value === "line") lineFields.classList.remove("hidden");
+            });
+
+            document.getElementById("drawBtn").addEventListener("click", () => {
+                const shape = shapeSelect.value;
+                const x = parseInt(document.getElementById("posX").value);
+                const y = parseInt(document.getElementById("posY").value);
+                const color = document.getElementById("color").value;
+
+                ctx.fillStyle = color;
+                ctx.strokeStyle = color;
+
+                if (shape === "rect") {
+                    const w = parseInt(document.getElementById("rectWidth").value);
+                    const h = parseInt(document.getElementById("rectHeight").value);
+                    ctx.fillRect(x, y, w, h);
+                } 
+                else if (shape === "circle") {
+                    const r = parseInt(document.getElementById("circleRadius").value);
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, 2 * Math.PI);
+                    ctx.fill();
+                } 
+                else if (shape === "line") {
+                    const x2 = parseInt(document.getElementById("lineX2").value);
+                    const y2 = parseInt(document.getElementById("lineY2").value);
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+            });
+
+            document.getElementById("clearBtn").addEventListener("click", () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            });
+
+            canvas.addEventListener("dblclick", (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                document.getElementById("posX").value = Math.round(x);
+                document.getElementById("posY").value = Math.round(y);
+            });
+        </script>
+    </body>
+</html>
